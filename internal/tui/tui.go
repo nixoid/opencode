@@ -25,6 +25,7 @@ type keyMap struct {
 	Help          key.Binding
 	SwitchSession key.Binding
 	Commands      key.Binding
+	SwitchProvider key.Binding // P21a4
 }
 
 var keys = keyMap{
@@ -50,6 +51,11 @@ var keys = keyMap{
 	Commands: key.NewBinding(
 		key.WithKeys("ctrl+k"),
 		key.WithHelp("ctrl+k", "commands"),
+	),
+
+	SwitchProvider: key.NewBinding( // P21a4
+		key.WithKeys("ctrl+m"),
+		key.WithHelp("ctrl+m", "switch provider"),
 	),
 }
 
@@ -362,6 +368,8 @@ func (a appModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				a.showHelp = !a.showHelp
 				return a, nil
 			}
+		case key.Matches(msg, keys.SwitchProvider): // P565d
+			return a, a.switchProvider()
 		}
 
 	}
@@ -565,6 +573,26 @@ func (a appModel) View() string {
 	}
 
 	return appView
+}
+
+func (a *appModel) switchProvider() tea.Cmd { // Pb2d4
+	providers := []string{"openai", "anthropic", "gemini", "bedrock", "groq"}
+	currentProvider := config.Get().Agents[config.AgentCoder].Model.Provider
+	var nextProvider string
+	for i, provider := range providers {
+		if provider == string(currentProvider) {
+			nextProvider = providers[(i+1)%len(providers)]
+			break
+		}
+	}
+	if nextProvider == "" {
+		return util.ReportError("No available providers to switch to")
+	}
+	err := config.SwitchProvider(nextProvider)
+	if err != nil {
+		return util.ReportError("Failed to switch provider: " + err.Error())
+	}
+	return util.ReportInfo("Switched to provider: " + nextProvider)
 }
 
 func New(app *app.App) tea.Model {

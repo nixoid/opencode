@@ -194,3 +194,32 @@ func WithBedrockOptions(bedrockOptions ...BedrockOption) ProviderClientOption {
 		options.bedrockOptions = bedrockOptions
 	}
 }
+
+func SwitchProvider(newProvider string) error { // P9f1e
+	if cfg == nil {
+		return fmt.Errorf("config not loaded")
+	}
+
+	var newModel models.ModelID
+	switch newProvider {
+	case "openai":
+		newModel = models.GPT41
+	case "anthropic":
+		newModel = models.Claude37Sonnet
+	case "gemini":
+		newModel = models.Gemini25
+	case "bedrock":
+		newModel = models.BedrockClaude37Sonnet
+	case "groq":
+		newModel = models.QWENQwq
+	default:
+		return fmt.Errorf("unsupported provider: %s", newProvider)
+	}
+
+	cfg.Agents[AgentCoder] = Agent{
+		Model:     newModel,
+		MaxTokens: models.SupportedModels[newModel].DefaultMaxTokens,
+	}
+
+	return nil
+}
